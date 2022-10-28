@@ -164,7 +164,6 @@ class NorthConnector {
       clearTimeout(this.filesTimeout)
     }
     this.fileCache.stop()
-    this.valueCache.stop()
   }
 
   /**
