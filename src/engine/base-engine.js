@@ -14,6 +14,7 @@ northList.MQTT = require('../north/north-mqtt/north-mqtt')
 northList.Console = require('../north/north-console/north-console')
 northList.WATSYConnect = require('../north/north-watsy/north-watsy')
 northList.CsvToHttp = require('../north/north-csv-to-http/north-csv-to-http')
+northList.Taho = require('../north/north-taho/north-taho')
 
 const southList = {}
 southList.SQL = require('../south/south-sql/south-sql')

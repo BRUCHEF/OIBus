@@ -1,12 +1,12 @@
 const net = require('net')
-const { CallRequest } = require('node-opcua-client')
-const ApiHandler = require('../ApiHandler.class')
 
-class A3ITAHO extends ApiHandler {
+const NorthConnector = require('../north-connector')
+
+class Taho extends NorthConnector {
   static category = 'IoT'
 
   /**
-   * Constructor for A3ITAHO
+   * Constructor for Taho
    * @constructor
    * @param {Object} applicationParameters - The application parameters
    * @param {BaseEngine} engine - The Engine
@@ -35,7 +35,7 @@ class A3ITAHO extends ApiHandler {
         payload += String.fromCharCode(parseInt(value.data.value, 10))
       }
     })
-    if(payload.length > 0){
+    if (payload.length > 0) {
       this.socket.write(payload)
     }
     return values.length
@@ -45,42 +45,42 @@ class A3ITAHO extends ApiHandler {
    * Initiates a connection for every data source to the right host and port.
    * @return {void}
    */
-   async connect() {
+  async connect() {
     this.connectToTCPServer()
   }
 
-    /**
+  /**
    * Close the connection
    *
    * @return {void}
    */
-     async disconnect() {
-      if (this.reconnectTimeout) {
-        clearTimeout(this.reconnectTimeout)
-      }
-      if (this.connected) {
-        this.socket.end()
-        this.connected = false
-      }
-      await super.disconnect()
+  async disconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout)
     }
+    if (this.connected) {
+      this.socket.end()
+      this.connected = false
+    }
+    await super.disconnect()
+  }
 
-    connectToTCPServer() {
-      this.reconnectTimeout = null
-      this.socket = new net.Socket()
-      this.socket.connect(
-        { host: this.host, port: this.port },
-        () => {
-          super.connect()
-          this.updateStatusDataStream({ 'Connected at': new Date().toISOString() })
-        },
-      )
-      this.socket.on('error', (error) => {
-        this.logger.error(`A3ITAHO connect error: ${JSON.stringify(error)}`)
-        this.disconnect()
-        this.reconnectTimeout = setTimeout(this.connectToTCPServer.bind(this), this.retryInterval)
-      })
-    }
+  connectToTCPServer() {
+    this.reconnectTimeout = null
+    this.socket = new net.Socket()
+    this.socket.connect(
+      { host: this.host, port: this.port },
+      () => {
+        super.connect()
+        this.updateStatusDataStream({ 'Connected at': new Date().toISOString() })
+      },
+    )
+    this.socket.on('error', (error) => {
+      this.logger.error(`A3ITAHO connect error: ${JSON.stringify(error)}`)
+      this.disconnect()
+      this.reconnectTimeout = setTimeout(this.connectToTCPServer.bind(this), this.retryInterval)
+    })
+  }
 }
 
-module.exports = A3ITAHO
+module.exports = Taho

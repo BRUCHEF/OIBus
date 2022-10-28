@@ -1,26 +1,26 @@
 import React from 'react'
-import { inRange, isHost } from '../../services/validation.service'
+import { inRange, isHost } from '../../service/validation.service'
 
 const schema = { name: 'A3ITAHO' }
 schema.form = {
   A3ITAHOSettings: {
-    type: 'OIbTitle',
+    type: 'OibTitle',
     label: 'A3ITAHO settings',
     md: 12,
     children: (
-        <p>
-          A3ITAHO TODO.
-        </p>
+      <p>
+        A3ITAHO TODO.
+      </p>
     ),
   },
   host: {
-    type: 'OIbText',
+    type: 'OibText',
     defaultValue: '127.0.0.1',
     valid: isHost(),
     help: <div>IP address of the TAHO source</div>,
   },
   port: {
-    type: 'OIbInteger',
+    type: 'OibInteger',
     newRow: false,
     valid: inRange(1, 65535),
     defaultValue: 9999,

@@ -1,6 +1,6 @@
 const fs = require('fs/promises')
-const OIConnect = require('./A3ITAHO.class')
-const { defaultConfig: config } = require('../../../tests/testConfig')
+const OIConnect = require('./north-taho')
+const { defaultConfig: config } = require('../../../tests/test-config')
 
 // Mock logger
 jest.mock('../../engine/logger/Logger.class')
