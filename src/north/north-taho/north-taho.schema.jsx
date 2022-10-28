@@ -19,13 +19,13 @@ schema.form = {
     valid: isHost(),
     help: <div>IP address of the TAHO source</div>,
   },
-  /** 
+  /**
   ModuleADAM: {
-    type: 'OIbText',
+    type: 'OibText',
     defaultValue: 'ADAM00',
     valid: isModuleADAM(),
     help: <div>Module ADAM lié au TAHO</div>,
-  },*/
+  }, */
   port: {
     type: 'OibInteger',
     newRow: false,
