@@ -1,6 +1,7 @@
 const net = require('net')
 
 const NorthConnector = require('../north-connector')
+const DeferredPromise = require('../../service/deferred-promise')
 
 class Taho extends NorthConnector {
   static category = 'IoT'
@@ -20,6 +21,7 @@ class Taho extends NorthConnector {
     this.sentValues = {}
     this.canHandleValues = true
     this.canHandleFiles = false
+    this.notificationCache = {}
   }
 
   /**
@@ -29,118 +31,44 @@ class Taho extends NorthConnector {
    */
 
   async handleValues(values) {
-    let payload = ''
-    let valPreced = ''
-    const valEnCours = ''
-    const sTrame = ''
-    let sLigne = ''
-    let bCleExiste = 0
-    let bverifConnect
+    // Map each file to a promise and remove files sequentially
+    // TODO: prepare notificationCache first, send the whole notificationCache after
+    await values.filter((value) => this.sentValues[value.pointId] !== value.data.value)
+      .reduce((promise, value) => promise.then(
+        async () => this.sendValue(value),
+      ), Promise.resolve())
+  }
 
-    values.forEach((value) => {
-      console.log('Boucle Value.forEach, point :', value.pointId)
-      if (payload != '') {
-        payload += '|'
+  async sendValue(value) {
+    console.log('Boucle Value.forEach, point :', value.pointId)
+    this.sentValues[value.pointId] = value.data.value
+    console.log('1')
+    console.log('Condition SentValue : ', value.pointId)
+
+    if (this.notificationCache[value.pointId]) {
+      this.notificationCache[value.pointId].valPrec = this.notificationCache[value.pointId].valEnCours
+      this.notificationCache[value.pointId].valEnCours = String.fromCharCode(parseInt(value.data.value, 10))
+    } else {
+      this.notificationCache[value.pointId] = {
+        Module: 'ADAM0x',
+        NotifPanel: 'CHANGEMENTETAT',
+        pointId: value.pointId,
+        valPrec: '',
+        valEnCours: String.fromCharCode(parseInt(value.data.value, 10)),
       }
-      if (this.sentValues[value.pointId] !== value.data.value) {
-        this.sentValues[value.pointId] = value.data.value
-        valPreced = ''
-        console.log('1')
-        console.log('Condition SentValue : ', value.pointId)
-        bCleExiste = 0
-        for (var key in Trame) {
-          console.log('tabTrame KEY:', key)
-          if (key == value.pointId) {
-            bCleExiste = 1
-            console.log('bcleexiste 1.1')
-            valPreced = Trame[value.pointId].valEnCours
-            console.log('bcleexiste 1.2')
-          }
-        }
-        if (bCleExiste) {
-          console.log('bcleexiste 2.1')
-          Trame[value.pointId].valPrec = valPreced
-          Trame[value.pointId].valEnCours = String.fromCharCode(parseInt(value.data.value, 10))
-          console.log('bcleexiste 2.2')
-        } else {
-          console.log('bcleexiste 3.1')
-          Trame[value.pointId] = { Module: 'ADAM0x', NotifPanel: 'CHANGEMENTETAT', pointId: value.pointId, valPrec: valPreced, valEnCours: String.fromCharCode(parseInt(value.data.value, 10)) }
-          console.log('bcleexiste 3.2')
-        }
-        console.log('bcleexiste 4.1')
-        for (var key in Trame) {
-          sLigne = ''
-          console.log('bcleexiste 4.2')
-          if (key == value.pointId) {
-            sLigne = `${Trame[key].Module}|${Trame[key].NotifPanel}|${Trame[key].pointId}|${Trame[key].valPrec}|${Trame[key].valEnCours}|` + 'ERR' + '|' + 'ERR'
-            console.log('sLigne:', sLigne)
-            console.log('bcleexiste 4.3')
-            if (sLigne != '') {
-              this.socket.write(sLigne)
-              console.log('sLigne envoyé !')
-              console.log('Apres 1.1 ')
-              this.socket.readable.read().then(
-                ({ value, done }) => {
-                  if (!done) {
-                    console.log('Data recu 1', value)
-                  }
-                },
-              )
-              /**
-              this.socket.read('data', (stream) => {
-                console.log('bcleexiste 4.4')
-                console.log('reponse :',stream.toString())
-                console.log('Apres 1.2 ?')
-                })
-                */
-            }
-          }
-        }
-
-        /** else{
-          this.socket.once('data', (stream) => {
-            console.log('bcleexiste 4.3')
-            console.log('reponse :',stream.toString())
-          })
-        }    */
-
-        payload += String.fromCharCode(parseInt(value.data.value, 10))
-        console.log('Payload :', payload)
-      }
-    })
-
-    if (payload.length > 0) {
-      // for (var key in Trame){
-      // sLigne = Trame[key].Module +'|'+Trame[key].NotifPanel+'|'+Trame[key].pointId+'|'+Trame[key].valPrec+'|'+Trame[key].valEnCours+'|'+'ERR'+'|'+'ERR'
-      //  sTrame += sLigne + '\n'
-    //  }
-      // console.log(sTrame)
-      /**
-      this.socket.once('data', (stream) => {
-        console.log('reponse :',stream.toString())
-        //console.log(stream.toString())
-        if(stream.toString() == "ERR"){
-          reponse= stream.toString + ' DE CONNECTION'
-        }else{
-          reponse="connexion OK"
-        }
-      })
-      */
-      // this.socket.write(sTrame)
-      // console.log('Trame write ok')
-
-      // this.socket.write(payload)
     }
+    await this.writeValueIntoSocket(this.notificationCache[value.pointId])
+  }
 
-    // this.socket.write(sTrame)
-
-    /**
-    for (var key in Trame){
-      console.log("KEY FIN:",key)
-      console.log(Trame[key])
-    }
-*/
-    return values.length
+  async writeValueIntoSocket(value) {
+    const sLigne = `${value.Module}|${value.NotifPanel}|${value.pointId}|${value.valPrec}|${value.valEnCours}|ERR|ERR`
+    console.log('sLigne:', sLigne)
+    console.log('bcleexiste 4.3')
+    this.pendingWrite$ = new DeferredPromise()
+    this.socket.write(sLigne)
+    await this.pendingWrite$.promise
+    console.log('sLigne envoyé !')
+    console.log('Apres 1.1 ')
   }
 
   /**
@@ -174,13 +102,19 @@ class Taho extends NorthConnector {
       { host: this.host, port: this.port },
       async () => {
         await super.connect(_additionalInfo)
-        this.updateStatusDataStream({ 'Connected at': new Date().toISOString() })
       },
     )
     this.socket.on('error', async (error) => {
       this.logger.error(`Taho connect error: ${JSON.stringify(error)}`)
+      this.pendingWrite$.reject()
       await this.disconnect()
       this.reconnectTimeout = setTimeout(this.connectToTCPServer.bind(this), this.caching.retryInterval)
+    })
+
+    this.socket.on('data', (data) => {
+      console.log('received from taho', data)
+      // TODO: parse data
+      this.pendingWrite$.resolve()
     })
   }
 }

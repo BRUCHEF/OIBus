@@ -2,7 +2,7 @@ const child = require('node:child_process')
 const Stream = require('node:stream')
 const OPCHDA = require('./south-opchda')
 const tcpServer = require('./tcp-server')
-const deferredPromise = require('./deferred-promise')
+const deferredPromise = require('../../service/deferred-promise')
 
 const { defaultConfig: config } = require('../../../tests/test-config')
 
